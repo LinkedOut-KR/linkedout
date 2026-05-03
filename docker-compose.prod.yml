@@ -1,3 +1,7 @@
+networks:
+  linkedout:
+    driver: bridge
+
 services:
   gateway:
     image: ghcr.io/linkedout-kr/linkedout-gateway:latest
@@ -12,6 +16,8 @@ services:
     depends_on:
       - auth-service
       - experience-service
+    networks:
+      - linkedout
 
   auth-service:
     image: ghcr.io/linkedout-kr/linkedout-auth-service:latest
@@ -24,6 +30,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       PORT: 4001
+    networks:
+      - linkedout
 
   experience-service:
     image: ghcr.io/linkedout-kr/linkedout-experience-service:latest
@@ -36,6 +44,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AUTH_SERVICE_URL: http://auth-service:4001
       PORT: 4002
+    networks:
+      - linkedout
 
   web:
     image: ghcr.io/linkedout-kr/linkedout-web:latest
@@ -45,3 +55,5 @@ services:
       - '3000:3000'
     environment:
       NEXT_PUBLIC_API_URL: ${API_URL}
+    networks:
+      - linkedout

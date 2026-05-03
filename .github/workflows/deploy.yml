@@ -100,13 +100,20 @@ jobs:
 
       - name: Start DB services
         uses: appleboy/ssh-action@v1
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         with:
           host: ${{ secrets.DB_SERVER_HOST }}
           username: ${{ secrets.DB_SERVER_USER }}
           password: ${{ secrets.DB_SERVER_PASSWORD }}
           port: ${{ secrets.DB_SERVER_PORT }}
+          envs: MYSQL_ROOT_PASSWORD,MYSQL_USER,MYSQL_PASSWORD
           script: |
             cd /opt/linkedout
+            printf 'MYSQL_ROOT_PASSWORD=%s\nMYSQL_USER=%s\nMYSQL_PASSWORD=%s\n' \
+              "$MYSQL_ROOT_PASSWORD" "$MYSQL_USER" "$MYSQL_PASSWORD" > .env
             sudo docker compose -f docker-compose.db.yml up -d
             sudo docker image prune -f
 
@@ -131,17 +138,24 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+          API_URL: ${{ secrets.API_URL }}
         with:
           host: ${{ secrets.BE_SERVER_HOST }}
           username: ${{ secrets.BE_SERVER_USER }}
           password: ${{ secrets.BE_SERVER_PASSWORD }}
           port: ${{ secrets.BE_SERVER_PORT }}
-          envs: GHCR_TOKEN,GHCR_USER
+          envs: GHCR_TOKEN,GHCR_USER,MYSQL_USER,MYSQL_PASSWORD,JWT_SECRET,CORS_ORIGIN,API_URL
           script: |
             echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin
             cd /opt/linkedout
+            printf 'MYSQL_USER=%s\nMYSQL_PASSWORD=%s\nJWT_SECRET=%s\nCORS_ORIGIN=%s\nAPI_URL=%s\n' \
+              "$MYSQL_USER" "$MYSQL_PASSWORD" "$JWT_SECRET" "$CORS_ORIGIN" "$API_URL" > .env
             sudo docker compose -f docker-compose.prod.yml pull
-            sudo docker compose -f docker-compose.prod.yml up -d
+            sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
             sudo docker image prune -f
 
   notify:
