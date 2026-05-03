@@ -107,8 +107,8 @@ jobs:
           port: ${{ secrets.DB_SERVER_PORT }}
           script: |
             cd /opt/linkedout
-            docker compose -f docker-compose.db.yml up -d
-            docker image prune -f
+            sudo docker compose -f docker-compose.db.yml up -d
+            sudo docker image prune -f
 
   deploy-be:
     needs: deploy-db
@@ -128,13 +128,18 @@ jobs:
 
       - name: Deploy BE services
         uses: appleboy/ssh-action@v1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
         with:
           host: ${{ secrets.BE_SERVER_HOST }}
           username: ${{ secrets.BE_SERVER_USER }}
           password: ${{ secrets.BE_SERVER_PASSWORD }}
           port: ${{ secrets.BE_SERVER_PORT }}
+          envs: GHCR_TOKEN,GHCR_USER
           script: |
+            echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin
             cd /opt/linkedout
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
-            docker image prune -f
+            sudo docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml up -d
+            sudo docker image prune -f
