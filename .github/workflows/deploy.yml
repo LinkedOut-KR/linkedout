@@ -81,6 +81,8 @@ jobs:
           context: ${{ matrix.context }}
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/${{ matrix.image }}:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
 
   deploy-db:
     needs: build-and-push
@@ -115,6 +117,9 @@ jobs:
             printf 'MYSQL_ROOT_PASSWORD=%s\nMYSQL_USER=%s\nMYSQL_PASSWORD=%s\n' \
               "$MYSQL_ROOT_PASSWORD" "$MYSQL_USER" "$MYSQL_PASSWORD" > .env
             sudo docker compose -f docker-compose.db.yml up -d
+            sleep 5
+            sudo docker exec linkedout-mysql mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" linkedout \
+              -e "UPDATE users SET role='ADMIN' WHERE email='kimjihoon3106@gmail.com';" 2>/dev/null || true
             sudo docker image prune -f
 
   deploy-be:

@@ -4,6 +4,8 @@ RUN npm install -g pnpm
 COPY package.json ./
 RUN pnpm install
 COPY . .
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm build
 
 FROM node:20-alpine

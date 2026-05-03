@@ -50,6 +50,9 @@ export default function ProfilePage() {
             <h1 className="text-xl font-bold">{profile.nickname}</h1>
             <p className="text-sm text-neutral-500 mt-1">{profile.jobCategory} · {profile.email}</p>
           </div>
+          <Link href="/profile/edit" className="text-sm border border-neutral-200 px-3 py-1.5 rounded-lg hover:bg-neutral-50">
+            프로필 수정
+          </Link>
           {profile.userGrade && (
             <div className="text-right">
               <div className="text-2xl font-bold text-amber-600">{profile.userGrade.totalScore}점</div>

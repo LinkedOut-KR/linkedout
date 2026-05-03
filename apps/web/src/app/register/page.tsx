@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/auth/send-phone-code', { phone });
+      await api.post('/api/auth/phone/send', { phone });
       setCodeSent(true);
     } catch (err: any) {
       setError(err.response?.data?.message ?? '인증번호 발송에 실패했습니다.');
@@ -38,7 +38,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/auth/verify-phone', { phone, code });
+      await api.post('/api/auth/phone/verify', { phone, code });
       setStep('form');
     } catch (err: any) {
       setError(err.response?.data?.message ?? '인증번호가 올바르지 않습니다.');
@@ -73,9 +73,10 @@ export default function RegisterPage() {
             <div className="flex gap-2">
               <input
                 type="tel"
-                placeholder="010-0000-0000"
+                placeholder="01012345678"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                maxLength={11}
                 className="flex-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
               />
               <button
