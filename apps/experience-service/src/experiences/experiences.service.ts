@@ -71,7 +71,7 @@ export class ExperiencesService {
           grade: true,
           viewCount: true,
           createdAt: true,
-          user: { select: { nickname: true } },
+          user: { select: { id: true, nickname: true } },
           _count: { select: { votes: true } },
         },
       }),
@@ -79,7 +79,11 @@ export class ExperiencesService {
     ]);
 
     return {
-      data: experiences.map((e) => ({ ...e, id: e.id.toString() })),
+      data: experiences.map((e) => ({
+        ...e,
+        id: e.id.toString(),
+        user: { ...e.user, id: e.user.id.toString() },
+      })),
       total,
       page,
       totalPages: Math.ceil(total / take),
@@ -92,6 +96,7 @@ export class ExperiencesService {
       include: {
         user: { select: { id: true, nickname: true, jobCategory: true } },
         experienceGrade: true,
+        proofs: { select: { id: true, fileUrl: true, fileType: true } },
         _count: { select: { votes: true } },
         premiumContent: userId
           ? {
@@ -132,6 +137,19 @@ export class ExperiencesService {
     });
 
     await this.updateExperienceGrade(experienceId);
+  }
+
+  async update(userId: string, experienceId: string, dto: Partial<{ title: string; summary: string; category: string; problem: string; role: string; goal: string; action: string; result: string; achievement: string; lesson: string }>) {
+    const exp = await this.findOneOrThrow(experienceId);
+    if (exp.userId.toString() !== userId) throw new ForbiddenException();
+    if (exp.status !== 'DRAFT' && exp.status !== 'REJECTED') {
+      throw new BadRequestException('초안 또는 반려 상태에서만 수정할 수 있습니다.');
+    }
+    const updated = await this.prisma.experience.update({
+      where: { id: BigInt(experienceId) },
+      data: dto,
+    });
+    return { ...updated, id: updated.id.toString(), userId: updated.userId.toString() };
   }
 
   async addProof(userId: string, experienceId: string, url: string) {

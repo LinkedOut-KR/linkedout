@@ -88,7 +88,7 @@ export default async function HomePage({
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-3 text-xs text-neutral-400">
-                <span>{exp.user.nickname}</span>
+                <Link href={`/users/${exp.user.id ?? ''}`} onClick={(e) => e.stopPropagation()} className="hover:underline">{exp.user.nickname}</Link>
                 <span>·</span>
                 <span>조회 {exp.viewCount}</span>
                 <span>·</span>

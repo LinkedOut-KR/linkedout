@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { ExperiencesService } from './experiences.service';
 import { CreateExperienceDto } from './dto/create-experience.dto';
+import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { VoteExperienceDto } from './dto/vote-experience.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -39,6 +40,16 @@ export class ExperiencesController {
   @UseGuards(JwtAuthGuard)
   create(@CurrentUser() user: { id: string }, @Body() dto: CreateExperienceDto) {
     return this.experiences.create(user.id, dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateExperienceDto,
+  ) {
+    return this.experiences.update(user.id, id, dto);
   }
 
   @Post(':id/proofs')

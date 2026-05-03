@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import api from '@/lib/api';
 
@@ -56,7 +57,13 @@ export default function OwnerActions({ experienceId, ownerId, status, proofs }: 
 
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
-      <h2 className="font-semibold mb-1">검토 요청</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-semibold">검토 요청</h2>
+        <Link href={`/experiences/${experienceId}/edit`}
+          className="text-xs border border-neutral-300 px-2 py-1 rounded-lg hover:bg-neutral-100">
+          내용 수정
+        </Link>
+      </div>
       <p className="text-sm text-neutral-500 mb-4">증빙 URL을 1개 이상 첨부해야 검토를 요청할 수 있습니다.</p>
 
       {proofList.length > 0 && (
