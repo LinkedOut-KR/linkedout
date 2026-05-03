@@ -23,7 +23,11 @@ export class UsersService {
         createdAt: true,
         profile: true,
         userGrade: true,
-        _count: { select: { experiences: true } },
+        experiences: {
+          select: { id: true, title: true, status: true, grade: true, createdAt: true },
+          orderBy: { createdAt: 'desc' as const },
+          take: 50,
+        },
       },
     });
 
