@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"docker compose -f /Users/kimjihoon/Desktop/LinkedOut/docker-compose.yml up -d 2>&1\",\"timeout\":60000,\"description\":\"MySQL + Redis 컨테이너 시작\"}",
+  "error": "Exit code 1\nunable to get image 'mysql:8.0': Cannot connect to the Docker daemon at unix:///Users/kimjihoon/.docker/run/docker.sock. Is the docker daemon running?",
+  "timestamp": "2026-05-03T02:48:10.688Z",
+  "retry_count": 2
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"docker ps 2>&1\",\"description\":\"Docker daemon 상태 확인\"}",
+  "error": "Exit code 1\nCannot connect to the Docker daemon at unix:///Users/kimjihoon/.docker/run/docker.sock. Is the docker daemon running?",
+  "timestamp": "2026-05-03T02:57:25.412Z",
+  "retry_count": 1
+}
