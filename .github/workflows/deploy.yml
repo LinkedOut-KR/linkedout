@@ -143,3 +143,37 @@ jobs:
             sudo docker compose -f docker-compose.prod.yml pull
             sudo docker compose -f docker-compose.prod.yml up -d
             sudo docker image prune -f
+
+  notify:
+    needs: deploy-be
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          STATUS: ${{ needs.deploy-be.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_MSG: ${{ github.event.head_commit.message || 'workflow_dispatch' }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$STATUS" = "success" ]; then
+            COLOR=3066993
+            TITLE="✅ 배포 성공"
+          else
+            COLOR=15158332
+            TITLE="❌ 배포 실패"
+          fi
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"$TITLE\",
+                \"color\": $COLOR,
+                \"fields\": [
+                  {\"name\": \"커밋\", \"value\": \"$COMMIT_MSG\", \"inline\": false},
+                  {\"name\": \"실행자\", \"value\": \"$ACTOR\", \"inline\": true},
+                  {\"name\": \"로그\", \"value\": \"[Actions 보기]($RUN_URL)\", \"inline\": true}
+                ]
+              }]
+            }"
