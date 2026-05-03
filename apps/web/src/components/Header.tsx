@@ -4,12 +4,20 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
 
 export default function Header() {
-  const { user, token, logout, init } = useAuthStore();
+  const { user, token, logout, setAuth, init } = useAuthStore();
   const router = useRouter();
 
-  useEffect(() => { init(); }, [init]);
+  useEffect(() => {
+    init();
+    if (token && !user) {
+      api.get('/api/users/me').then((res) => {
+        setAuth(res.data, token);
+      }).catch(() => {});
+    }
+  }, [token, user, init, setAuth]);
 
   const handleLogout = () => {
     logout();
@@ -24,6 +32,9 @@ export default function Header() {
           <Link href="/" className="text-neutral-600 hover:text-neutral-900">경험 탐색</Link>
           {token ? (
             <>
+              {user?.role === 'ADMIN' && (
+                <Link href="/admin" className="text-amber-600 hover:text-amber-700 font-medium">관리자</Link>
+              )}
               <Link href="/experiences/new" className="text-neutral-600 hover:text-neutral-900">경험 등록</Link>
               <Link href="/profile" className="text-neutral-600 hover:text-neutral-900">{user?.nickname ?? '내 프로필'}</Link>
               <button onClick={handleLogout} className="text-neutral-400 hover:text-neutral-700">로그아웃</button>

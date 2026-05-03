@@ -134,6 +134,72 @@ export class ExperiencesService {
     await this.updateExperienceGrade(experienceId);
   }
 
+  async addProof(userId: string, experienceId: string, url: string) {
+    const exp = await this.findOneOrThrow(experienceId);
+    if (exp.userId.toString() !== userId) throw new ForbiddenException();
+    if (exp.status !== 'DRAFT' && exp.status !== 'REJECTED') {
+      throw new BadRequestException('초안 또는 반려 상태에서만 증빙을 추가할 수 있습니다.');
+    }
+    return this.prisma.experienceProof.create({
+      data: { experienceId: BigInt(experienceId), fileUrl: url, fileType: 'URL' },
+    });
+  }
+
+  async findPending(page = 1) {
+    const take = 20;
+    const skip = (page - 1) * take;
+    const [data, total] = await Promise.all([
+      this.prisma.experience.findMany({
+        where: { status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take,
+        include: {
+          user: { select: { id: true, nickname: true, email: true } },
+          proofs: { select: { id: true, fileUrl: true, fileType: true } },
+          _count: { select: { votes: true } },
+        },
+      }),
+      this.prisma.experience.count({ where: { status: 'PENDING' } }),
+    ]);
+    return {
+      data: data.map((e) => ({ ...e, id: e.id.toString(), userId: e.userId.toString() })),
+      total,
+    };
+  }
+
+  async approve(adminId: string, experienceId: string, gradeAssigned?: number, note?: string) {
+    const exp = await this.findOneOrThrow(experienceId);
+    if (exp.status !== 'PENDING') throw new BadRequestException('PENDING 상태가 아닙니다.');
+    await this.prisma.adminReview.create({
+      data: {
+        experienceId: BigInt(experienceId),
+        adminId: BigInt(adminId),
+        status: 'APPROVED',
+        gradeAssigned: gradeAssigned ?? null,
+        note,
+      },
+    });
+    const updated = await this.prisma.experience.update({
+      where: { id: BigInt(experienceId) },
+      data: { status: 'APPROVED', ...(gradeAssigned != null ? { grade: gradeAssigned } : {}) },
+    });
+    return { ...updated, id: updated.id.toString(), userId: updated.userId.toString() };
+  }
+
+  async reject(adminId: string, experienceId: string, note?: string) {
+    const exp = await this.findOneOrThrow(experienceId);
+    if (exp.status !== 'PENDING') throw new BadRequestException('PENDING 상태가 아닙니다.');
+    await this.prisma.adminReview.create({
+      data: { experienceId: BigInt(experienceId), adminId: BigInt(adminId), status: 'REJECTED', note },
+    });
+    const updated = await this.prisma.experience.update({
+      where: { id: BigInt(experienceId) },
+      data: { status: 'REJECTED' },
+    });
+    return { ...updated, id: updated.id.toString(), userId: updated.userId.toString() };
+  }
+
   async report(reporterId: string, experienceId: string, reason: string, detail?: string) {
     const existing = await this.prisma.report.findUnique({
       where: { reporterId_experienceId: { reporterId: BigInt(reporterId), experienceId: BigInt(experienceId) } },

@@ -156,6 +156,8 @@ jobs:
               "$MYSQL_USER" "$MYSQL_PASSWORD" "$JWT_SECRET" "$CORS_ORIGIN" "$API_URL" > .env
             sudo docker compose -f docker-compose.prod.yml pull
             sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
+            sleep 15
+            sudo docker exec linkedout-auth-service ./node_modules/.bin/prisma db push --schema=./prisma/schema.prisma --skip-generate || true
             sudo docker image prune -f
 
   notify:

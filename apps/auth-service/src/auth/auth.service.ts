@@ -66,7 +66,7 @@ export class AuthService {
 
     await this.redis.del(`phone_verified:${dto.phone}`);
 
-    const token = this.generateToken(user.id.toString(), user.email);
+    const token = this.generateToken(user.id.toString(), user.email, user.role);
     return { user: { ...user, id: user.id.toString() }, token };
   }
 
@@ -81,12 +81,12 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
 
-    const token = this.generateToken(user.id.toString(), user.email);
+    const token = this.generateToken(user.id.toString(), user.email, user.role);
     const { passwordHash: _, ...userWithoutPassword } = user;
     return { user: { ...userWithoutPassword, id: user.id.toString() }, token };
   }
 
-  private generateToken(userId: string, email: string) {
-    return this.jwt.sign({ sub: userId, email });
+  private generateToken(userId: string, email: string, role: string) {
+    return this.jwt.sign({ sub: userId, email, role });
   }
 }
