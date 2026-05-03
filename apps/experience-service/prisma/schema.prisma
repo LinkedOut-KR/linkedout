@@ -1,0 +1,249 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  BigInt    @id @default(autoincrement())
+  email               String    @unique @db.VarChar(255)
+  passwordHash        String?   @map("password_hash") @db.VarChar(255)
+  phone               String    @unique @db.VarChar(20)
+  phoneVerified       Boolean   @default(false) @map("phone_verified")
+  nickname            String    @db.VarChar(50)
+  isRealName          Boolean   @default(false) @map("is_real_name")
+  jobCategory         String    @map("job_category") @db.VarChar(50)
+  profileImageUrl     String?   @map("profile_image_url") @db.VarChar(500)
+  freeViewsRemaining  Int       @default(3) @map("free_views_remaining")
+  trustScore          Int       @default(100) @map("trust_score")
+  role                UserRole  @default(USER)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  profile         Profile?
+  experiences     Experience[]
+  userGrade       UserGrade?
+  votes           Vote[]
+  purchases       Purchase[]
+  reports         Report[]
+  adminReviews    AdminReview[]
+
+  @@map("users")
+}
+
+model Profile {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @unique @map("user_id")
+  bio          String?  @db.Text
+  githubUrl    String?  @map("github_url") @db.VarChar(500)
+  linkedinUrl  String?  @map("linkedin_url") @db.VarChar(500)
+  portfolioUrl String?  @map("portfolio_url") @db.VarChar(500)
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Experience {
+  id          BigInt           @id @default(autoincrement())
+  userId      BigInt           @map("user_id")
+  title       String           @db.VarChar(200)
+  summary     String           @db.VarChar(500)
+  category    String           @db.VarChar(50)
+  problem     String           @db.Text
+  role        String           @db.Text
+  goal        String           @db.Text
+  action      String           @db.Text
+  result      String           @db.Text
+  achievement String?          @db.Text
+  lesson      String?          @db.Text
+  status      ExperienceStatus @default(DRAFT)
+  grade       Decimal?         @db.Decimal(2, 1)
+  viewCount   Int              @default(0) @map("view_count")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proofs          ExperienceProof[]
+  votes           Vote[]
+  experienceGrade ExperienceGrade?
+  premiumContent  PremiumContent?
+  reports         Report[]
+  adminReviews    AdminReview[]
+
+  @@map("experiences")
+}
+
+model ExperienceProof {
+  id            BigInt    @id @default(autoincrement())
+  experienceId  BigInt    @map("experience_id")
+  fileUrl       String    @map("file_url") @db.VarChar(500)
+  fileType      FileType  @map("file_type")
+  aiVerified    Boolean   @default(false) @map("ai_verified")
+  aiConfidence  Float?    @map("ai_confidence")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@map("experience_proofs")
+}
+
+model Vote {
+  id           BigInt   @id @default(autoincrement())
+  experienceId BigInt   @map("experience_id")
+  voterId      BigInt   @map("voter_id")
+  difficulty   Int      @db.TinyInt
+  impact       Int      @db.TinyInt
+  workValue    Int      @map("work_value") @db.TinyInt
+  authenticity Int      @db.TinyInt
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  voter      User       @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@unique([experienceId, voterId])
+  @@map("votes")
+}
+
+model ExperienceGrade {
+  id            BigInt   @id @default(autoincrement())
+  experienceId  BigInt   @unique @map("experience_id")
+  grade         Decimal  @db.Decimal(2, 1)
+  voteCount     Int      @default(0) @map("vote_count")
+  adminAdjusted Boolean  @default(false) @map("admin_adjusted")
+  gradedAt      DateTime @default(now()) @map("graded_at")
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@map("experience_grades")
+}
+
+model UserGrade {
+  id               BigInt   @id @default(autoincrement())
+  userId           BigInt   @unique @map("user_id")
+  totalScore       Int      @default(0) @map("total_score")
+  experienceCount  Int      @default(0) @map("experience_count")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_grades")
+}
+
+model PremiumContent {
+  id           BigInt               @id @default(autoincrement())
+  experienceId BigInt               @unique @map("experience_id")
+  preview      String               @db.Text
+  content      String               @db.LongText
+  price        Int                  @default(0)
+  status       PremiumContentStatus @default(DRAFT)
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  purchases  Purchase[]
+
+  @@map("premium_contents")
+}
+
+model Purchase {
+  id               BigInt         @id @default(autoincrement())
+  userId           BigInt         @map("user_id")
+  premiumContentId BigInt         @map("premium_content_id")
+  amount           Int
+  paymentKey       String?        @map("payment_key") @db.VarChar(200)
+  status           PurchaseStatus @default(COMPLETED)
+  purchasedAt      DateTime       @default(now()) @map("purchased_at")
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  premiumContent PremiumContent @relation(fields: [premiumContentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, premiumContentId])
+  @@map("purchases")
+}
+
+model Report {
+  id           BigInt       @id @default(autoincrement())
+  reporterId   BigInt       @map("reporter_id")
+  experienceId BigInt       @map("experience_id")
+  reason       ReportReason
+  detail       String?      @db.Text
+  status       ReportStatus @default(PENDING)
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  reporter   User       @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, experienceId])
+  @@map("reports")
+}
+
+model AdminReview {
+  id            BigInt            @id @default(autoincrement())
+  experienceId  BigInt            @map("experience_id")
+  adminId       BigInt            @map("admin_id")
+  status        AdminReviewStatus
+  gradeAssigned Decimal?          @map("grade_assigned") @db.Decimal(2, 1)
+  note          String?           @db.Text
+  reviewedAt    DateTime          @default(now()) @map("reviewed_at")
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  admin      User       @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_reviews")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ExperienceStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
+}
+
+enum FileType {
+  IMAGE
+  PDF
+  URL
+}
+
+enum PremiumContentStatus {
+  DRAFT
+  PENDING
+  APPROVED
+}
+
+enum PurchaseStatus {
+  COMPLETED
+  REFUNDED
+}
+
+enum ReportReason {
+  FAKE
+  STOLEN
+  INAPPROPRIATE
+  PRIVACY
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
+enum AdminReviewStatus {
+  APPROVED
+  REJECTED
+  PENDING
+}

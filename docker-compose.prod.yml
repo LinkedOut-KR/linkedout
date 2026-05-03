@@ -1,0 +1,81 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: linkedout-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: linkedout
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  redis:
+    image: redis:7-alpine
+    container_name: linkedout-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  gateway:
+    image: ghcr.io/linkedout-kr/linkedout-gateway:latest
+    container_name: linkedout-gateway
+    restart: always
+    ports:
+      - '4000:4000'
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:4001
+      EXPERIENCE_SERVICE_URL: http://experience-service:4002
+      CORS_ORIGIN: ${CORS_ORIGIN}
+    depends_on:
+      - auth-service
+      - experience-service
+
+  auth-service:
+    image: ghcr.io/linkedout-kr/linkedout-auth-service:latest
+    container_name: linkedout-auth-service
+    restart: always
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/linkedout
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      PORT: 4001
+    depends_on:
+      - mysql
+      - redis
+
+  experience-service:
+    image: ghcr.io/linkedout-kr/linkedout-experience-service:latest
+    container_name: linkedout-experience-service
+    restart: always
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/linkedout
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:4001
+      PORT: 4002
+    depends_on:
+      - mysql
+      - redis
+
+  web:
+    image: ghcr.io/linkedout-kr/linkedout-web:latest
+    container_name: linkedout-web
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: ${API_URL}
+
+volumes:
+  mysql_data:
+  redis_data:
